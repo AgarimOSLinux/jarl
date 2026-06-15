@@ -1,0 +1,382 @@
+# jarl – themes
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# HOW TO ACTIVATE / DEACTIVATE A THEME
+# ──────────────────────────────────────
+# Set  enabled = true   to activate a theme.
+# Set  enabled = false  to deactivate it.
+#
+# The active theme is selected from the theme picker (press 't' in jarl).
+# Press 'T' to reload this file without restarting jarl.
+#
+# If no theme has  enabled = true, Catppuccin Mocha is used as fallback.
+#
+# HOW TO ADD A CUSTOM THEME
+# ──────────────────────────
+# Append a new [[themes]] block at the end of this file.
+# All color values must be hex strings: "#rrggbb".
+# Run  jarl --reset-themes  to restore this file to factory defaults.
+#
+# Fields:
+#   bg        – main background
+#   fg        – primary text
+#   accent    – titles, highlighted keys, border accents
+#   highlight – selected-row background
+#   success   – live indicator, playing station name
+#   warning   – connecting / paused state
+#   error     – error messages
+#   muted     – secondary text, genre labels
+#   border    – box borders
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[themes]]
+name      = "Akane"
+enabled   = false
+bg        = "#0e1e36"
+fg        = "#f4b999"
+accent    = "#9279aa"
+highlight = "#4a2036"
+success   = "#be6f76"
+warning   = "#fa7e75"
+error     = "#d2495b"
+muted     = "#574f72"
+border    = "#4a2036"
+
+[[themes]]
+name      = "Anonymous"
+enabled   = false
+bg        = "#000000"
+fg        = "#fefefe"
+accent    = "#f5f5f5"
+highlight = "#2b2b2b"
+success   = "#cfcfcf"
+warning   = "#bdbdbd"
+error     = "#f5f5f5"
+muted     = "#5a5a5a"
+border    = "#2b2b2b"
+
+[[themes]]
+name      = "Ayu Dark"
+enabled   = false
+bg        = "#0d1017"
+fg        = "#bfbdb6"
+accent    = "#e6b450"
+highlight = "#1e2433"
+success   = "#7fd962"
+warning   = "#ff8f40"
+error     = "#f26d78"
+muted     = "#5c6773"
+border    = "#1a1f29"
+
+[[themes]]
+name      = "Ayu Mirage"
+enabled   = false
+bg        = "#1f2430"
+fg        = "#cbccc6"
+accent    = "#ffcc66"
+highlight = "#2d3447"
+success   = "#bae67e"
+warning   = "#ffd580"
+error     = "#ff3333"
+muted     = "#5c6773"
+border    = "#33415e"
+
+[[themes]]
+name      = "Azure Glow"
+enabled   = false
+bg        = "#0a0f14"
+fg        = "#a9dfff"
+accent    = "#00bfff"
+highlight = "#123247"
+success   = "#2affd5"
+warning   = "#ffd43b"
+error     = "#ff4c4c"
+muted     = "#355a66"
+border    = "#1c2833"
+
+[[themes]]
+name      = "Bamboo"
+enabled   = false
+bg        = "#252623"
+fg        = "#f1e9d2"
+accent    = "#57a5e5"
+highlight = "#3a3d37"
+success   = "#8fb573"
+warning   = "#dbb651"
+error     = "#e75a7c"
+muted     = "#5b5e5a"
+border    = "#3a3d37"
+
+[[themes]]
+name      = "Catppuccin Macchiato"
+enabled   = false
+bg        = "#24273a"
+fg        = "#cad3f5"
+accent    = "#c6a0f6"
+highlight = "#363a4f"
+success   = "#a6da95"
+warning   = "#eed49f"
+error     = "#ed8796"
+muted     = "#6e738d"
+border    = "#494d64"
+
+[[themes]]
+name      = "Catppuccin Mocha"
+enabled   = true
+bg        = "#1e1e2e"
+fg        = "#cdd6f4"
+accent    = "#cba6f7"
+highlight = "#313244"
+success   = "#a6e3a1"
+warning   = "#fab387"
+error     = "#f38ba8"
+muted     = "#6c7086"
+border    = "#45475a"
+
+[[themes]]
+name      = "Dracula"
+enabled   = false
+bg        = "#282a36"
+fg        = "#f8f8f2"
+accent    = "#bd93f9"
+highlight = "#44475a"
+success   = "#50fa7b"
+warning   = "#ffb86c"
+error     = "#ff5555"
+muted     = "#6272a4"
+border    = "#44475a"
+
+[[themes]]
+name      = "Everblush"
+enabled   = false
+bg        = "#141b1e"
+fg        = "#dadada"
+accent    = "#67b0e8"
+highlight = "#1e2528"
+success   = "#8ccf7e"
+warning   = "#e5c76b"
+error     = "#e57474"
+muted     = "#526970"
+border    = "#232a2d"
+
+[[themes]]
+name      = "Everforest Dark"
+enabled   = false
+bg        = "#2d353b"
+fg        = "#d3c6aa"
+accent    = "#83c092"
+highlight = "#3d484d"
+success   = "#a7c080"
+warning   = "#e69875"
+error     = "#e67e80"
+muted     = "#7a8478"
+border    = "#475258"
+
+[[themes]]
+name      = "Flexoki Dark"
+enabled   = false
+bg        = "#100f0f"
+fg        = "#cecdc3"
+accent    = "#4385be"
+highlight = "#1c1b1a"
+success   = "#879a39"
+warning   = "#d0a215"
+error     = "#af3029"
+muted     = "#878580"
+border    = "#282726"
+
+[[themes]]
+name      = "Ghost Pastel"
+enabled   = false
+bg        = "#070506"
+fg        = "#ffffff"
+accent    = "#979fec"
+highlight = "#836f79"
+success   = "#648ed0"
+warning   = "#e095b5"
+error     = "#b37580"
+muted     = "#836f79"
+border    = "#4a3a44"
+
+[[themes]]
+name      = "Gruvbox Dark"
+enabled   = false
+bg        = "#282828"
+fg        = "#ebdbb2"
+accent    = "#d79921"
+highlight = "#3c3836"
+success   = "#b8bb26"
+warning   = "#fe8019"
+error     = "#fb4934"
+muted     = "#928374"
+border    = "#504945"
+
+[[themes]]
+name      = "Kanagawa"
+enabled   = false
+bg        = "#1f1f28"
+fg        = "#dcd7ba"
+accent    = "#7e9cd8"
+highlight = "#2a2a37"
+success   = "#98bb6c"
+warning   = "#e6c384"
+error     = "#c34043"
+muted     = "#727169"
+border    = "#363646"
+
+[[themes]]
+name      = "Kanagawa Dragon"
+enabled   = false
+bg        = "#0d0c0c"
+fg        = "#c5c9c5"
+accent    = "#9cabca"
+highlight = "#1d1c19"
+success   = "#8a9a7b"
+warning   = "#c4b28a"
+error     = "#c4746e"
+muted     = "#8a8980"
+border    = "#2d2b2b"
+
+[[themes]]
+name      = "Mellow"
+enabled   = false
+bg        = "#1e1e2e"
+fg        = "#d9d7f1"
+accent    = "#b48ead"
+highlight = "#2e2e3e"
+success   = "#a3d9a5"
+warning   = "#f0c38e"
+error     = "#e06c75"
+muted     = "#6c6888"
+border    = "#3e3e5e"
+
+[[themes]]
+name      = "Monokai Dark"
+enabled   = false
+bg        = "#272822"
+fg        = "#f8f8f2"
+accent    = "#66d9e8"
+highlight = "#3e3d32"
+success   = "#a6e22e"
+warning   = "#e6db74"
+error     = "#f92672"
+muted     = "#75715e"
+border    = "#49483e"
+
+[[themes]]
+name      = "Moodpeak"
+enabled   = false
+bg        = "#181c22"
+fg        = "#e0e6ed"
+accent    = "#6a85ff"
+highlight = "#3d4455"
+success   = "#4ecdc4"
+warning   = "#82eeff"
+error     = "#ff7b92"
+muted     = "#5a6480"
+border    = "#3d4455"
+
+[[themes]]
+name      = "Nagai Twilight"
+enabled   = false
+bg        = "#1f1a2e"
+fg        = "#e9e4f5"
+accent    = "#bd93f9"
+highlight = "#3a3457"
+success   = "#6fb3a8"
+warning   = "#eadda6"
+error     = "#ff5555"
+muted     = "#726693"
+border    = "#2d2640"
+
+[[themes]]
+name      = "Nord"
+enabled   = false
+bg        = "#2e3440"
+fg        = "#eceff4"
+accent    = "#88c0d0"
+highlight = "#3b4252"
+success   = "#a3be8c"
+warning   = "#ebcb8b"
+error     = "#bf616a"
+muted     = "#4c566a"
+border    = "#434c5e"
+
+[[themes]]
+name      = "One Dark Pro"
+enabled   = false
+bg        = "#282c34"
+fg        = "#abb2bf"
+accent    = "#61afef"
+highlight = "#2c323c"
+success   = "#98c379"
+warning   = "#e5c07b"
+error     = "#e06c75"
+muted     = "#5c6370"
+border    = "#3e4451"
+
+[[themes]]
+name      = "Rainy Night"
+enabled   = false
+bg        = "#1e2030"
+fg        = "#cdd3e1"
+accent    = "#89b4fa"
+highlight = "#292b3b"
+success   = "#a6e3a1"
+warning   = "#f9e2af"
+error     = "#f38ba8"
+muted     = "#585b70"
+border    = "#45475a"
+
+[[themes]]
+name      = "Rosé Pine"
+enabled   = false
+bg        = "#191724"
+fg        = "#e0def4"
+accent    = "#c4a7e7"
+highlight = "#26233a"
+success   = "#9ccfd8"
+warning   = "#f6c177"
+error     = "#eb6f92"
+muted     = "#6e6a86"
+border    = "#403d52"
+
+[[themes]]
+name      = "Solarized Osaka"
+enabled   = false
+bg        = "#001419"
+fg        = "#839395"
+accent    = "#268bd3"
+highlight = "#002c38"
+success   = "#849900"
+warning   = "#b28500"
+error     = "#db302d"
+muted     = "#576d74"
+border    = "#002c38"
+
+[[themes]]
+name      = "Tokyo Night"
+enabled   = false
+bg        = "#1a1b26"
+fg        = "#c0caf5"
+accent    = "#7aa2f7"
+highlight = "#292e42"
+success   = "#9ece6a"
+warning   = "#e0af68"
+error     = "#f7768e"
+muted     = "#565f89"
+border    = "#3b4261"
+
+[[themes]]
+name      = "Velvet Night"
+enabled   = false
+bg        = "#0a101f"
+fg        = "#f5ecdf"
+accent    = "#e2687c"
+highlight = "#1e2a42"
+success   = "#dc9b68"
+warning   = "#e5af1b"
+error     = "#e21d63"
+muted     = "#9099a5"
+border    = "#2a3450"

@@ -1,0 +1,317 @@
+# jarl – station list
+# ─────────────────────────────────────────────────────────────────────────────
+# Supported formats: MP3 · AAC · OGG/Vorbis · FLAC
+# Run 'jarl --reset-stations' to restore this file to factory defaults.
+#
+# HOW TO ADD A STATION
+# ──────────────────────
+# jarl needs a direct stream URL — not a webpage, not a playlist file.
+#
+# 1. GET THE DIRECT STREAM URL
+#
+#    From a .pls or .m3u playlist file:
+#      curl -s "https://example.com/stream.pls" | grep "^File1"
+#      curl -s "https://example.com/stream.m3u" | grep "^http"
+#
+#    From a webpage (radio.net, tunein, etc.):
+#      Open in Firefox → F12 → Network tab → filter "Media"
+#      → press Play → copy the URL of the audio request.
+#
+#    From SomaFM:
+#      curl -s "https://somafm.com/CHANNELNAME256.pls" | grep "^File1"
+#      (channel list: https://somafm.com/listen/)
+#
+# 2. VERIFY IT PLAYS AND CHECK THE BITRATE
+#      mpv --no-video "YOUR_STREAM_URL"
+#    mpv shows: "Audio: mp3, 44100 Hz, stereo, 256 kb/s"
+#    Press q to stop once confirmed.
+#
+# 3. ADD IT HERE
+#    Append a [[stations]] block and press 'r' inside jarl to reload.
+#
+# TEMPLATE:
+#   [[stations]]
+#   name    = "Station Name"
+#   genre   = "Genre · Subgenre"
+#   url     = "https://..."
+#   bitrate = 256
+
+# ── SomaFM ──────────────────────────────────────────────────────────────────
+
+[[stations]]
+name    = "SomaFM Bossa Beyond"
+genre   = "Bossa Nova · Jazz"
+url     = "http://ice2.somafm.com/bossa-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Chill its 97.3"
+genre   = "Electronic · Chillout"
+url     = "http://ice6.somafm.com/chillits-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM cliqhop IDM"
+genre   = "Electronic · IDM"
+url     = "https://ice4.somafm.com/cliqhop-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Dark Zone"
+genre   = "Ambient · Dark"
+url     = "https://ice4.somafm.com/darkzone-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM DEF CON Radio"
+genre   = "Electronic · Experimental"
+url     = "http://ice6.somafm.com/defcon-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Digitalis"
+genre   = "Electronic · Indie"
+url     = "https://ice6.somafm.com/digitalis-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Doomed"
+genre   = "Dark · Gothic"
+url     = "https://ice6.somafm.com/doomed-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Drone Zone"
+genre   = "Ambient · Drone"
+url     = "https://ice6.somafm.com/dronezone-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Dub Step Beyond"
+genre   = "Electronic · Dubstep"
+url     = "http://ice4.somafm.com/dubstep-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Groove Salad"
+genre   = "Ambient · Downtempo"
+url     = "https://ice6.somafm.com/groovesalad-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Sonic Universe"
+genre   = "Electronic · Jazz"
+url     = "https://ice6.somafm.com/sonicuniverse-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Synphaera"
+genre   = "Ambient · Electronic"
+url     = "https://ice6.somafm.com/synphaera-256-mp3"
+bitrate = 256
+
+[[stations]]
+name    = "SomaFM Underground 80s"
+genre   = "80s · New Wave"
+url     = "https://ice2.somafm.com/u80s-256-mp3"
+bitrate = 256
+
+# ── Radio Paradise ──────────────────────────────────────────────────────────
+
+[[stations]]
+name         = "Radio Paradise Main Mix"
+genre        = "Eclectic · Rock"
+url          = "https://stream.radioparadise.com/flac"
+bitrate      = "FLAC"
+metadata_url = "https://api.radioparadise.com/api/now_playing?chan=0"
+
+[[stations]]
+name         = "Radio Paradise Mellow Mix"
+genre        = "Eclectic · Mellow"
+url          = "https://stream.radioparadise.com/mellow-flac"
+bitrate      = "FLAC"
+metadata_url = "https://api.radioparadise.com/api/now_playing?chan=1"
+
+# ── NTS Radio ───────────────────────────────────────────────────────────────
+
+[[stations]]
+name    = "NTS Radio 1"
+genre   = "Eclectic · Experimental"
+url     = "https://stream-relay-geo.ntslive.net/stream"
+bitrate = 256
+
+[[stations]]
+name    = "NTS Radio 2"
+genre   = "Eclectic · Underground"
+url     = "https://stream-relay-geo.ntslive.net/stream2"
+bitrate = 256
+
+# ── Lounge ──────────────────────────────────────────────────────────────────
+
+[[stations]]
+name         = "Pure Lounge Radio"
+genre        = "Lounge · Chillout"
+url          = "https://mscp4.live-streams.nl:8142/lounge.ogg"
+bitrate      = "FLAC"
+metadata_url = "https://mscp4.live-streams.nl:8142/status-json.xsl"
+
+[[stations]]
+name    = "Sensual Lounge"
+genre   = "Lounge · Chillout"
+url     = "http://kathy.torontocast.com:3590/;"
+bitrate = 320
+
+# ── Dinamo FM ───────────────────────────────────────────────────────────────
+
+[[stations]]
+name    = "Dinamo FM Caffe"
+genre   = "Lounge · Downtempo"
+url     = "http://channels.dinamo.fm/caffe-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Deep"
+genre   = "Deep House · Electronic"
+url     = "http://channels.dinamo.fm/deep-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Discotheque"
+genre   = "Disco · 70s New York"
+url     = "https://channels.dinamo.fm/discotheque-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Fluent"
+genre   = "Drum and Bass"
+url     = "https://channels.dinamo.fm/fluent-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Legacy"
+genre   = "House · Deep House"
+url     = "https://channels.dinamo.fm/legacy-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Locodyno"
+genre   = "Eclectic · House · Techno"
+url     = "https://channels.dinamo.fm/locodyno-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Sleep"
+genre   = "Ambient · Electronic"
+url     = "https://channels.dinamo.fm/sleep-mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Dinamo FM Smog"
+genre   = "Electronic"
+url     = "https://channels.dinamo.fm/smog-mp3"
+bitrate = 320
+
+# ── Other ───────────────────────────────────────────────────────────────────
+
+[[stations]]
+name    = "9128.live"
+genre   = "Ambient"
+url     = "https://streams.radio.co/s0aa1e6f4a/listen"
+bitrate = 320
+
+[[stations]]
+name    = "Radio Sputnik"
+genre   = "Techno . House"
+url     = "https://radiosputnik.nl:8443/flac"
+bitrate = "FLAC"
+
+[[stations]]
+name    = "Isekoi Radio | Non-Stop Ambient"
+genre   = "Ambient"
+url     = "https://public.isekoi-radio.com/listen/ambient/ambientradio.mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Deep Vibes Radio"
+genre   = "House · Deep House"
+url     = "http://88.208.218.19:8090/stream"
+bitrate = 320
+
+[[stations]]
+name    = "DnBRadio.com"
+genre   = "Drum and Bass"
+url     = "https://azura.drmnbss.org/listen/dnbradio/radio.mp3"
+bitrate = 320
+
+[[stations]]
+name    = "DnB Station"
+genre   = "Drum and Bass"
+url     = "http://dnbstation.com:8005/listen.mp3"
+bitrate = 320
+
+[[stations]]
+name    = "Loose FM"
+genre   = "Eclectic · Experimental"
+url     = "https://loosefm.radiocult.fm/stream"
+bitrate = 320
+
+[[stations]]
+name    = "Hi On Line Lounge"
+genre   = "Lounge"
+url     = "http://mediaserv33.live-streams.nl:8036/"
+bitrate = 320
+
+[[stations]]
+name    = "House Music Radio UK"
+genre   = "House"
+url     = "http://uk4-vn.mixstream.net:8128/;"
+bitrate = 320
+
+[[stations]]
+name    = "mr.chem fm"
+genre   = "Ambient"
+url     = "https://e20.yesstreaming.net:6217/stream"
+bitrate = 320
+
+[[stations]]
+name    = "Nauagos Kanenas"
+genre   = "Lounge · Downtempo"
+url     = "http://radio.streamings.gr:8064/stream"
+bitrate = 320
+
+[[stations]]
+name    = "PerfectMoods Radio"
+genre   = "Lounge"
+url     = "https://listen.radioking.com/radio/64968/stream/104227"
+bitrate = 320
+
+[[stations]]
+name    = "Radio Pro-B Romania"
+genre   = "House"
+url     = "http://live.radioprob.ro:8888/stream"
+bitrate = 320
+
+[[stations]]
+name    = "RadioMonster Dance"
+genre   = "Dance · EDM"
+url     = "https://ic.radiomonster.fm/dance.ultra"
+bitrate = 320
+
+[[stations]]
+name    = "Dhectar"
+genre   = "Techno · Electronic"
+url     = "https://manager.dhectar.fr:1080/stream"
+bitrate = "FLAC"
+
+[[stations]]
+name    = "SmoothJazz.com.pl"
+genre   = "Smooth Jazz"
+url     = "https://bcast.vigormultimedia.com:48888/sjcomplflac"
+bitrate = "FLAC"
+
+[[stations]]
+name    = "Trance Athena Radio"
+genre   = "Trance"
+url     = "http://cast.streams.ovh:8008/stream"
+bitrate = 320
+

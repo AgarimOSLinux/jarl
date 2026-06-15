@@ -1,0 +1,81 @@
+# jarl – example configuration
+#
+# Copy this file to ~/.config/jarl/config.toml to use it.
+# All fields are optional; the values shown here are the defaults.
+
+# ── Theme ─────────────────────────────────────────────────────────────────────
+#
+# Name of the active theme. Must match the name of an enabled theme in
+# ~/.config/jarl/themes.toml.
+#
+# To activate a theme: open themes.toml and set  enabled = true  on its block.
+# To deactivate a theme: set  enabled = false.
+# Only enabled themes appear in the theme picker (press 't' in jarl).
+#
+# By default only Catppuccin Mocha is enabled. Press 'T' inside jarl to reload
+# themes.toml after editing it, without restarting.
+
+theme = "Catppuccin Mocha"
+
+# ── Volume ────────────────────────────────────────────────────────────────────
+#
+# Initial playback volume.
+# Range: 0.0 (silent) – 1.0 (full volume).
+# This value is updated automatically when you quit the application.
+
+volume = 0.80
+
+# ── Notifications ─────────────────────────────────────────────────────────────
+#
+# Send a desktop notification via notify-send when the track title changes.
+# Requires libnotify to be installed (xbps-install libnotify on Void Linux).
+# Toggle at runtime with the keybinding below (default: N).
+
+notify = true
+
+# ── Key bindings ──────────────────────────────────────────────────────────────
+#
+# Change any binding here to remap it.
+#
+# Format:
+#   Single character : "j"  "k"  "q"  "+"  etc.
+#   Named keys       : "enter"  "space"  "esc"
+#                      "up"  "down"  "left"  "right"
+#                      "pageup"  "pagedown"  "home"  "end"
+#   With modifiers   : "ctrl+c"  "ctrl+d"  "alt+j"  etc.
+#
+# Note: "ctrl+c" is always a hard-coded fallback for quit.
+# Note: "/" (search stations) is hard-coded and cannot be remapped.
+
+[keybindings]
+# Navigation
+nav_up      = "k"        # move selection up
+nav_down    = "j"        # move selection down
+nav_top     = "g"        # jump to first station
+nav_bottom  = "G"        # jump to last station
+
+# Playback
+play        = "enter"    # play selected station
+pause       = "space"    # pause / resume
+stop        = "s"        # stop playback
+
+# Volume
+volume_up   = "+"        # increase volume by 5%
+volume_down = "-"        # decrease volume by 5%
+
+# Station management
+favourite   = "f"        # toggle ★ favourite on selected station
+fav_filter  = "F"        # toggle favourites-only filter
+delete      = "d"        # delete selected station from stations.toml
+reload         = "r"     # reload stations.toml from disk
+reload_themes  = "T"     # reload themes.toml from disk
+
+# UI
+theme       = "t"        # open theme picker
+history     = "H"        # open playback history
+zen         = "z"        # toggle zen mode (hide header & help bar)
+hide_help   = "h"        # toggle help bar visibility
+visualizer  = "v"        # toggle spectrum visualizer
+transparent = "p"        # toggle transparent / opaque background
+toggle_notify = "N"      # toggle desktop notifications
+quit        = "q"        # quit jarl

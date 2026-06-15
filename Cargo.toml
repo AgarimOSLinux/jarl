@@ -1,0 +1,39 @@
+[package]
+name        = "jarl"
+version     = "0.1.18"
+edition     = "2024"
+description = "Terminal radio player for internet streams"
+license     = "GPL-3.0-only"
+
+[[bin]]
+name = "jarl"
+path = "src/main.rs"
+
+[dependencies]
+# Terminal UI
+ratatui   = "0.30.1"
+crossterm = "0.29"
+
+# Audio output (ALSA on Linux via CPAL)
+rodio = "0.22.2"
+
+# Audio decoder: MP3, AAC, OGG/Vorbis, FLAC
+symphonia = { version = "0.6", features = ["mp3", "aac", "vorbis", "flac", "ogg"] }
+
+# HTTP streaming with pure-Rust TLS
+ureq = { version = "3", features = ["rustls"] }
+
+# Config and station file serialisation
+serde = { version = "1", features = ["derive"] }
+toml  = "1"
+
+# Utilities
+anyhow        = "1"
+log           = "0.4"
+env_logger    = "0.11"
+dirs          = "6"
+unicode-width = "0.2"
+libc          = "0.2"
+
+# FFT for the spectrum visualiser
+rustfft = "6"
