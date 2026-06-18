@@ -4,6 +4,10 @@ Terminal radio player written in Rust. Focused on ambient, trip-hop, downtempo, 
 
 Supported formats: **MP3 · AAC · OGG/Vorbis · FLAC**
 
+jarl is named in tribute to Gregorio Sánchez, "Chiquito de la Calzada" — the
+now-playing box rotates one of his catchphrases every 5 minutes on its
+right-hand side.
+
 ---
 
 ## Dependencies (Void Linux)

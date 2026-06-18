@@ -7,6 +7,7 @@ mod meta_poll;
 mod modes;
 mod player;
 mod playlist;
+mod quotes;
 mod stations;
 mod theme;
 mod icy;

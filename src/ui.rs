@@ -147,37 +147,112 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
 
     // Track title / genre line: show track title if available, else genre.
     // If the title is wider than the available area, scroll it (ticker).
+    // The right-hand side of this line and the wave/vol line below it are
+    // reserved for a rotating Chiquito de la Calzada tribute quote (two
+    // short lines), right-aligned, leaving the left content untouched.
+    let inner_w = area.width.saturating_sub(2) as usize; // minus the block's left/right border
+    let q = app.chiquito_quote;
+    let q_line1 = q.lines.first().copied().unwrap_or("");
+    let q_line2 = q.lines.get(1).copied().unwrap_or("");
+    // Reserve enough width for the longer of the two quote lines, plus a
+    // small gap so it never visually collides with the scrolling title.
+    let quote_w = q_line1.chars().count().max(q_line2.chars().count());
+    const QUOTE_GAP: usize = 3;
+    // Below this terminal width, drop the quote entirely rather than
+    // squeezing both it and the track/genre text into an unreadable sliver.
+    const MIN_WIDTH_FOR_QUOTE: usize = 40;
+    let reserved_w = if quote_w > 0 && inner_w >= MIN_WIDTH_FOR_QUOTE { quote_w + QUOTE_GAP } else { 0 };
+    let (q_line1, q_line2) = if reserved_w > 0 { (q_line1, q_line2) } else { ("", "") };
+
     let track_line = {
         let title_opt = app.track_title.lock().ok()
             .and_then(|g| g.clone());
-        let available_w = area.width.saturating_sub(7) as usize;
-        match title_opt {
-            Some(ref title) if !title.is_empty() => {
-                let display = if title.chars().count() > available_w {
+        let available_w = area.width.saturating_sub(7).saturating_sub(reserved_w as u16) as usize;
+        let has_title = title_opt.as_ref().map(|t| !t.is_empty()).unwrap_or(false);
+        let left = match &title_opt {
+            Some(title) if !title.is_empty() => {
+                if title.chars().count() > available_w {
                     // Pad with spaces so the scroll looks continuous
                     let padded = format!("{title}   ");
                     let chars: Vec<char> = padded.chars().collect();
                     let len = chars.len();
                     let offset = app.ticker_offset % len;
-                    let slice: String = chars[offset..]
+                    chars[offset..]
                         .iter()
                         .chain(chars[..offset].iter())
                         .take(available_w)
-                        .collect();
-                    slice
+                        .collect::<String>()
                 } else {
                     title.clone()
-                };
-                Line::from(vec![
-                    Span::raw("     "),
-                    Span::styled(display, Style::default().fg(t.fg)),
-                ])
+                }
             }
-            _ => Line::from(vec![
-                Span::raw("     "),
-                Span::styled(sgenre, Style::default().fg(t.muted)),
-            ]),
+            _ => sgenre.to_string(),
+        };
+        let left_styled = if has_title {
+            Style::default().fg(t.fg)
+        } else {
+            Style::default().fg(t.muted)
+        };
+
+        // Right-pad the left content so the quote lands flush against the
+        // right border, then append line 1 of the quote. Guard against
+        // width 0 (very narrow terminal or oversized quote reservation):
+        // pad_display's truncation path underflows on a zero width.
+        let left_w = inner_w.saturating_sub(5).saturating_sub(reserved_w);
+        let left_padded = if left_w == 0 { String::new() } else { pad_display(&left, left_w) };
+        // Quote vertical alignment:
+        //   - 1-line quote: show it on this middle row (true vertical centre)
+        //   - 2-line quote: show line 1 here, line 2 on the wave/vol row below
+        let is_two_line = !q_line2.is_empty();
+        let mid_quote = if is_two_line { q_line1 } else { q_line1 };
+        let gap = if reserved_w > 0 { " ".repeat(QUOTE_GAP.min(inner_w)) } else { String::new() };
+        let mid_quote_padded = if reserved_w > 0 {
+            let col_w = reserved_w.saturating_sub(QUOTE_GAP);
+            let text_w = mid_quote.chars().count();
+            // Centre single-line quotes; left-align first line of two-liners
+            let pad = if is_two_line {
+                col_w.saturating_sub(text_w)
+            } else {
+                col_w.saturating_sub(text_w) / 2
+            };
+            format!("{}{}", " ".repeat(pad), mid_quote)
+        } else {
+            String::new()
+        };
+        Line::from(vec![
+            Span::raw("     "),
+            Span::styled(left_padded, left_styled),
+            Span::raw(gap),
+            Span::styled(mid_quote_padded, Style::default().fg(t.accent)),
+        ])
+    };
+
+    let wave_vol_line = {
+        let left_text_w: usize = format!("  {wave}  {badge}   vol: {vol_bar}").chars().count();
+        let left = vec![
+            Span::styled(format!("  {wave}  "), Style::default().fg(t.accent)),
+            Span::styled(badge, Style::default().fg(badge_col).add_modifier(Modifier::BOLD)),
+            Span::raw("   "),
+            Span::styled("vol: ", Style::default().fg(t.muted)),
+            Span::styled(vol_bar, Style::default().fg(t.accent)),
+        ];
+        let pad_w = inner_w.saturating_sub(left_text_w).saturating_sub(reserved_w);
+        let mut spans = left;
+        spans.push(Span::raw(" ".repeat(pad_w)));
+        if reserved_w > 0 {
+            // Bottom row: only show content for two-line quotes (line 2).
+            // Single-line quotes are already shown centred on the middle row.
+            let is_two_line = !q_line2.is_empty();
+            if is_two_line {
+                let col_w = reserved_w.saturating_sub(QUOTE_GAP);
+                let text_w = q_line2.chars().count();
+                let pad = col_w.saturating_sub(text_w);
+                spans.push(Span::raw(" ".repeat(QUOTE_GAP.min(inner_w))));
+                spans.push(Span::raw(" ".repeat(pad)));
+                spans.push(Span::styled(q_line2, Style::default().fg(t.accent)));
+            }
         }
+        Line::from(spans)
     };
 
     let lines = vec![
@@ -188,13 +263,7 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
             filter_badge,
         ]),
         track_line,
-        Line::from(vec![
-            Span::styled(format!("  {wave}  "), Style::default().fg(t.accent)),
-            Span::styled(badge, Style::default().fg(badge_col).add_modifier(Modifier::BOLD)),
-            Span::raw("   "),
-            Span::styled("vol: ", Style::default().fg(t.muted)),
-            Span::styled(vol_bar, Style::default().fg(t.accent)),
-        ]),
+        wave_vol_line,
     ];
 
     let title = Span::styled(

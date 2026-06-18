@@ -88,6 +88,11 @@ pub struct App {
     /// (stream connected but producing no real audio) and force a
     /// reconnect. Resets to 0 whenever sound resumes or playback stops.
     silent_ticks: u32,
+    /// Current Chiquito de la Calzada quote shown in the header's
+    /// now-playing box (right side) as a tribute. Rotates every
+    /// `CHIQUITO_QUOTE_INTERVAL`.
+    pub chiquito_quote: &'static crate::quotes::Quote,
+    chiquito_quote_at: Instant,
 }
 
 impl App {
@@ -125,6 +130,8 @@ impl App {
             last_notified_title: None,
             history: history::load(),
             silent_ticks: 0,
+            chiquito_quote: crate::quotes::random_quote(),
+            chiquito_quote_at: Instant::now(),
         };
 
         if first_run {
@@ -186,6 +193,7 @@ impl App {
                 }
                 self.maybe_notify_track_change();
                 self.check_dead_air();
+                self.maybe_rotate_quote();
             }
         }
     }
@@ -304,6 +312,19 @@ impl App {
 
     pub fn set_status(&mut self, msg: String) {
         self.status_msg = Some((msg, self.tick));
+    }
+
+    /// Rotates the Chiquito de la Calzada quote shown in the header every
+    /// `CHIQUITO_QUOTE_INTERVAL`. Picking a new quote at random each time
+    /// (rather than cycling through the list) means it can occasionally
+    /// repeat the same one back-to-back — that's fine for a small tribute
+    /// easter egg and keeps the selection logic trivial.
+    fn maybe_rotate_quote(&mut self) {
+        const CHIQUITO_QUOTE_INTERVAL: Duration = Duration::from_secs(30);
+        if self.chiquito_quote_at.elapsed() >= CHIQUITO_QUOTE_INTERVAL {
+            self.chiquito_quote = crate::quotes::random_quote();
+            self.chiquito_quote_at = Instant::now();
+        }
     }
 
     /// Detects "dead air": the player reports `Playing` (stream still
