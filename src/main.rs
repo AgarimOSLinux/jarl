@@ -4,7 +4,9 @@ mod favorites;
 mod history;
 mod logger;
 mod meta_poll;
+mod modes;
 mod player;
+mod playlist;
 mod stations;
 mod theme;
 mod icy;
@@ -155,6 +157,7 @@ fn print_help() {
     println!("KEYS (defaults):");
     println!("  ↑↓ / j k    Navigate         Enter    Play");
     println!("  Space        Pause/resume     s        Stop");
+    println!("  [ / ]        Prev/next station");
     println!("  + / -        Volume           f        Toggle favourite");
     println!("  F            Favourites only  /        Search stations");
     println!("  d            Delete station   H        History");

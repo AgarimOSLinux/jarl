@@ -81,6 +81,7 @@ On first launch jarl creates its config directory and all default files:
 | `+` / `-` | Volume up / down |
 | `f` | Toggle ★ favourite |
 | `F` | Show favourites only |
+| `[` / `]` | Previous / next station |
 | `/` | Search stations |
 | `d` | Delete selected station |
 | `t` | Theme picker |
@@ -94,7 +95,8 @@ On first launch jarl creates its config directory and all default files:
 | `N` | Toggle desktop notifications |
 | `q` / `Ctrl-C` | Quit |
 
-All bindings can be remapped in `~/.config/jarl/config.toml`.
+All bindings can be remapped in `~/.config/jarl/config.toml`. Modifier prefixes
+`ctrl+`, `alt+` and `shift+` can be combined, e.g. `shift+tab` or `ctrl+shift+x`.
 
 ---
 
@@ -117,53 +119,49 @@ jarl --help
 
 ## How to add a station
 
-jarl needs a **direct audio stream URL** — not a webpage, not a playlist file.
-The URL must point to an MP3, AAC, OGG or FLAC stream.
+jarl needs an audio stream URL. As of this version, jarl automatically detects
+and resolves simple `.pls`, `.m3u` and `.m3u8` playlists that point to one
+direct audio stream — paste the playlist link directly and jarl will follow it.
+This does **not** cover true HLS (segmented `.m3u8` manifests with quality
+variants and `.ts` chunks), which still isn't supported. The manual extraction
+steps below are only needed for stations that don't expose even a playlist
+file (e.g. some station webpages).
 
-### Step 1 — Get the direct stream URL
+### Step 1 — Get the stream or playlist URL
 
-**From a .pls or .m3u playlist file**
+**Playlist URL works directly**
 
-Playlist files are plain text and contain the real stream URL on a `File1=` line:
-
-```sh
-curl -s "https://example.com/stream.pls" | grep "^File1"
-curl -s "https://example.com/stream.m3u" | grep "^http"
-```
-
-The value after `File1=` is the URL you need.
-
-**From a station webpage (radio.net, tunein.com, etc.)**
-
-These sites do not expose the stream URL directly. Use the browser:
-
-1. Open the station page in Firefox or Chrome
-2. Press `F12` to open Developer Tools
-3. Go to the **Network** tab and filter by **Media**
-4. Press Play on the station
-5. An audio request will appear — right-click it and copy the URL
+If you already have a `.pls`, `.m3u` or `.m3u8` link, you can use it as-is in
+`stations.toml` — jarl will fetch it, detect the playlist format (by
+Content-Type or by sniffing the body), and follow it to the underlying audio
+stream automatically.
 
 **From SomaFM**
 
-Every SomaFM channel has a `.pls` file at a predictable address:
+Every SomaFM channel has a `.pls` file at a predictable address — this can be
+used directly as the station URL, no manual extraction needed:
 
-```sh
-curl -s "https://somafm.com/CHANNELNAME256.pls" | grep "^File1"
+```
+https://somafm.com/CHANNELNAME256.pls
 ```
 
 Replace `CHANNELNAME` with the channel slug (e.g. `groovesalad`, `thetrip`, `bossa`).
 Full channel list: <https://somafm.com/listen/>
 
-Example:
-```sh
-curl -s "https://somafm.com/bossa256.pls" | grep "^File1"
-# File1=http://ice2.somafm.com/bossa-256-mp3
-```
+**From a station webpage (radio.net, tunein.com, etc.)**
+
+These sites do not expose a stream or playlist URL directly. Use the browser:
+
+1. Open the station page in Firefox or Chrome
+2. Press `F12` to open Developer Tools
+3. Go to the **Network** tab and filter by **Media**
+4. Press Play on the station
+5. An audio (or playlist) request will appear — right-click it and copy the URL
 
 ### Step 2 — Verify it plays and check the bitrate
 
 ```sh
-mpv --no-video "YOUR_STREAM_URL"
+mpv --no-video "YOUR_STREAM_OR_PLAYLIST_URL"
 ```
 
 mpv prints the audio details in its output:
@@ -239,8 +237,15 @@ setting is saved to `config.toml` and persists across sessions.
 ## Automatic reconnection
 
 If a stream drops unexpectedly, jarl will attempt to reconnect automatically up to 8
-times using exponential backoff. The status badge shows the current attempt number
-(e.g. `◌ reconnecting… (2/8)`). If all attempts fail, playback stops.
+times using exponential backoff (with a small randomised jitter on each delay, so
+multiple stations dropping at once don't all retry in lockstep). The status badge
+shows the current attempt number (e.g. `◌ reconnecting… (2/8)`). If all attempts
+fail, playback stops.
+
+jarl also detects "dead air": some stations keep the connection open but serve
+silence after a backend failure, which a normal connection-level reconnect can't
+catch. If the decoded audio measures as silent for several consecutive seconds
+while a station is supposedly playing, jarl forces a reconnect on its own.
 
 ---
 
@@ -287,9 +292,12 @@ Check `~/.config/jarl/jarl.log` for the exact HTTP error.
 Re-verify the URL with `mpv --no-video "URL"`.
 
 **A station connects but produces no audio**
-The stream may be serving a format that could not be probed
-(e.g. an HLS stream disguised as MP3). Only direct audio streams are supported —
-HLS (`.m3u8`) and DASH are not.
+If the stream is technically connected but silent for more than a few seconds,
+jarl will detect this and reconnect automatically. If that doesn't resolve it,
+the stream may be using a format jarl can't decode. jarl resolves simple
+`.pls`/`.m3u`/`.m3u8` playlists that point directly at one audio stream, but it
+does not support true HLS (segmented `.m3u8` manifests with `#EXT-X-STREAM-INF`
+variants and `.ts` chunks) or DASH.
 
 **No desktop notifications**
 Ensure `libnotify` is installed (`sudo xbps-install libnotify`) and that
@@ -304,8 +312,8 @@ for `notify = true`).
 cargo test
 ```
 
-Tests cover the JSON metadata parser (`meta_poll.rs`) and the ICY stream title
-parser (`icy_meta.rs`).
+Tests cover the JSON metadata parser (`meta_poll.rs`), the ICY stream title
+parser (`icy_meta.rs`), and playlist detection/parsing (`playlist.rs`).
 
 ---
 
@@ -324,12 +332,19 @@ jarl/
     ├── history.rs      ← playback history (load/push/save)
     ├── theme.rs        ← built-in themes, custom theme loader
     ├── player.rs       ← symphonia decoder + rodio audio engine, auto-reconnect
+    ├── playlist.rs     ← .pls/.m3u/.m3u8 detection and parsing
     ├── meta_poll.rs    ← background metadata poller for now-playing endpoints
     ├── icy.rs          ← ICY stream reader (MP3/AAC metadata)
     ├── icy_meta.rs     ← shared TrackTitle type
     ├── logger.rs       ← file logger (~/.config/jarl/jarl.log)
-    ├── visualizer.rs   ← FFT spectrum analyser
-    ├── app.rs          ← application state, event loop, keybindings
+    ├── visualizer.rs   ← FFT spectrum analyser, RMS-based silence detection
+    ├── app.rs          ← application state, event loop, shared playback helpers
+    ├── modes/          ← per-AppMode key dispatch
+    │   ├── normal.rs
+    │   ├── search.rs
+    │   ├── history.rs
+    │   ├── theme_picker.rs
+    │   └── confirm_delete.rs
     └── ui.rs           ← ratatui rendering
 ```
 

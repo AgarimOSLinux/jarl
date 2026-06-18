@@ -34,6 +34,8 @@ pub struct Keybindings {
     pub transparent:  String,
     pub history:      String,
     pub toggle_notify: String,
+    pub next_station: String,
+    pub prev_station: String,
 }
 
 impl Default for Keybindings {
@@ -61,22 +63,56 @@ impl Default for Keybindings {
             transparent: "p".into(),
             history:       "H".into(),
             toggle_notify: "N".into(),
+            next_station:  "]".into(),
+            prev_station:  "[".into(),
         }
     }
 }
 
+/// Case-insensitive prefix strip that is safe regardless of UTF-8 byte
+/// boundaries: it compares `prefix` (always plain ASCII here) against the
+/// leading `prefix.len()` *characters* of `s`, then returns the remainder
+/// of `s` starting after the byte offset of that many characters — never
+/// slicing at a byte count derived from a different string.
+fn strip_prefix_ci<'a>(s: &'a str, prefix: &str) -> Option<&'a str> {
+    let mut chars = s.chars();
+    for pc in prefix.chars() {
+        match chars.next() {
+            Some(sc) if sc.to_ascii_lowercase() == pc.to_ascii_lowercase() => {}
+            _ => return None,
+        }
+    }
+    Some(chars.as_str())
+}
+
 impl Keybindings {
-    /// Parse a binding string like "j", "enter", "ctrl+c" into (KeyCode, KeyModifiers).
+    /// Parse a binding string like "j", "enter", "ctrl+c", "shift+tab" into
+    /// (KeyCode, KeyModifiers). Modifier prefixes can be combined, e.g.
+    /// "ctrl+shift+x", and are matched case-insensitively.
     pub fn parse(s: &str) -> Option<(KeyCode, KeyModifiers)> {
-        let s = s.trim();
-        // Modifier prefix
-        let (mods, key) = if let Some(rest) = s.strip_prefix("ctrl+") {
-            (KeyModifiers::CONTROL, rest)
-        } else if let Some(rest) = s.strip_prefix("alt+") {
-            (KeyModifiers::ALT, rest)
-        } else {
-            (KeyModifiers::NONE, s)
-        };
+        let mut mods = KeyModifiers::NONE;
+        let mut rest = s.trim();
+
+        // Peel off any number of modifier prefixes, in any order. We lowercase
+        // just the prefix candidate via `to_ascii_lowercase` on a short
+        // owned copy rather than slicing `rest` by a fixed byte count, so
+        // this can never panic on a non-ASCII character sitting at a byte
+        // boundary.
+        loop {
+            if let Some(found) = strip_prefix_ci(rest, "ctrl+") {
+                mods |= KeyModifiers::CONTROL;
+                rest = found;
+            } else if let Some(found) = strip_prefix_ci(rest, "alt+") {
+                mods |= KeyModifiers::ALT;
+                rest = found;
+            } else if let Some(found) = strip_prefix_ci(rest, "shift+") {
+                mods |= KeyModifiers::SHIFT;
+                rest = found;
+            } else {
+                break;
+            }
+        }
+        let key = rest;
 
         let code = match key.to_lowercase().as_str() {
             "enter"    => KeyCode::Enter,
@@ -96,6 +132,11 @@ impl Keybindings {
             c if c.chars().count() == 1 => {
                 // Preserve original case for the char (uppercase matters for shift).
                 let ch = key.chars().next().unwrap();
+                // An uppercase letter implies SHIFT even without an explicit
+                // "shift+" prefix, matching how terminals report Shift+letter.
+                if ch.is_uppercase() {
+                    mods |= KeyModifiers::SHIFT;
+                }
                 KeyCode::Char(ch)
             }
             _ => return None,
@@ -105,15 +146,18 @@ impl Keybindings {
 
     /// Returns true if (code, mods) matches this binding string.
     ///
-    /// For single uppercase characters (e.g. "F", "G"), also accepts
-    /// KeyModifiers::SHIFT because some terminals send Shift+char for capitals.
+    /// Single uppercase characters (e.g. "F") parse with an implicit SHIFT
+    /// modifier, but some terminals report plain capitals without setting
+    /// the SHIFT bit at all. To handle both behaviours, an uppercase-char
+    /// binding also matches when the incoming event has no modifiers set.
     pub fn matches(binding: &str, code: KeyCode, mods: KeyModifiers) -> bool {
         match Self::parse(binding) {
             Some((c, m)) => {
                 if c == code && m == mods { return true; }
-                // Uppercase single char: also accept with SHIFT modifier.
+                // Uppercase single char: also accept with no explicit SHIFT
+                // bit set, since some terminals omit it for plain capitals.
                 if let KeyCode::Char(ch) = c {
-                    if ch.is_uppercase() && c == code && mods == KeyModifiers::SHIFT {
+                    if ch.is_uppercase() && c == code && m == KeyModifiers::SHIFT && mods == KeyModifiers::NONE {
                         return true;
                     }
                 }
@@ -204,7 +248,10 @@ impl Config {
     pub fn load() -> Result<(Self, bool)> {
         let first_run = Self::bootstrap()?;
         let raw = fs::read_to_string(Self::config_path()).unwrap_or_default();
-        let cfg = toml::from_str::<Config>(&raw).unwrap_or_default();
+        let cfg = toml::from_str::<Config>(&raw).unwrap_or_else(|e| {
+            log::warn!("config.toml parse error, using defaults: {e}");
+            Config::default()
+        });
         Ok((cfg, first_run))
     }
 
@@ -267,6 +314,8 @@ nav_bottom  = "{nav_bottom}"     # jump to last station
 play        = "{play}"           # play selected station
 pause       = "{pause}"          # pause / resume
 stop        = "{stop}"           # stop playback
+next_station = "{next_station}"  # play next station in the (visible/filtered) list
+prev_station = "{prev_station}"  # play previous station in the (visible/filtered) list
 
 # Volume
 volume_up   = "{volume_up}"      # increase volume by 5%
@@ -300,6 +349,8 @@ quit        = "{quit}"           # quit jarl
             play          = kb.play,
             pause         = kb.pause,
             stop          = kb.stop,
+            next_station  = kb.next_station,
+            prev_station  = kb.prev_station,
             volume_up     = kb.volume_up,
             volume_down   = kb.volume_down,
             favourite     = kb.favourite,

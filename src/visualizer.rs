@@ -103,6 +103,41 @@ pub fn compute_spectrum(buffer: &SampleBuffer, n_bands: usize) -> Vec<f32> {
     bands
 }
 
+// ── Silence detection ─────────────────────────────────────────────────────────
+//
+// Detects a stream that is technically still connected (rodio sink non-empty,
+// no I/O error) but producing flat/near-silent audio — e.g. a station that
+// hung on a dead air loop, or a CDN edge serving stale silence after a
+// backend failure. RMS on raw samples is used rather than the normalized FFT
+// spectrum above, since that normalization step divides out the very signal
+// level we need to measure here.
+
+/// RMS amplitude below this is considered silence. Chosen well below typical
+/// quiet-passage levels (~-40dBFS) to avoid false positives on ambient music.
+const SILENCE_RMS_THRESHOLD: f32 = 0.002;
+
+/// Computes the RMS (root mean square) amplitude of the most recent samples
+/// in the buffer. Returns `None` if there isn't enough data yet to judge
+/// (e.g. right after connecting), which callers should treat as "not silent"
+/// to avoid spurious triggers during stream startup.
+pub fn recent_rms(buffer: &SampleBuffer) -> Option<f32> {
+    const WINDOW: usize = FFT_SIZE; // reuse the same window size as the spectrum
+
+    let Ok(buf) = buffer.try_lock() else { return None; };
+    if buf.len() < WINDOW { return None; }
+
+    let start = buf.len() - WINDOW;
+    let sum_sq: f32 = buf.iter().skip(start).map(|&s| s * s).sum();
+    Some((sum_sq / WINDOW as f32).sqrt())
+}
+
+/// Returns true if the most recent audio looks like silence (dead air),
+/// based on RMS amplitude. Returns false (i.e. "assume not silent") if
+/// there isn't yet enough buffered data to judge.
+pub fn is_silent(buffer: &SampleBuffer) -> bool {
+    recent_rms(buffer).map(|rms| rms < SILENCE_RMS_THRESHOLD).unwrap_or(false)
+}
+
 // ── Smoothing ─────────────────────────────────────────────────────────────────
 
 /// Exponential moving average smoothing: fast attack, slow decay.

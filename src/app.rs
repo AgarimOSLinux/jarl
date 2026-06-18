@@ -11,18 +11,18 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 
-use crate::config::{Config, Keybindings};
-use crate::visualizer::{compute_spectrum, smooth, SampleBuffer};
+use crate::config::Config;
+use crate::visualizer::{compute_spectrum, is_silent, smooth, SampleBuffer};
 use crate::icy_meta::TrackTitle;
 use crate::favorites;
 use crate::history::{self, HistoryEntry};
 use crate::meta_poll::MetaPoll;
-use crate::player::{Player, PlayerCmd};
-use crate::stations::{load_stations, save_stations, Station};
+use crate::player::{Player, PlayerCmd, PlayerStatus};
+use crate::stations::{load_stations, Station};
 use crate::theme::{all_themes, find_theme, Theme};
 use crate::ui;
 
-// ── App mode ──────────────────────────────────────────────────────────────────
+// ── Startup helpers ───────────────────────────────────────────────────────────
 
 /// Redirects stderr to the jarl log file so ALSA/library noise
 /// doesn't corrupt the TUI display.
@@ -39,6 +39,8 @@ fn redirect_stderr_to_log() {
         }
     }
 }
+
+// ── App mode ──────────────────────────────────────────────────────────────────
 
 pub enum AppMode {
     Normal,
@@ -81,11 +83,22 @@ pub struct App {
     last_notified_title: Option<String>,
     /// Playback history (most recent first).
     pub history: Vec<HistoryEntry>,
+    /// Consecutive ticks where the audio buffer has measured as silent
+    /// while a station is supposedly playing. Used to detect "dead air"
+    /// (stream connected but producing no real audio) and force a
+    /// reconnect. Resets to 0 whenever sound resumes or playback stops.
+    silent_ticks: u32,
 }
 
 impl App {
     pub fn new(config: Config, first_run: bool) -> Result<Self> {
-        let stations  = load_stations().unwrap_or_else(|_| crate::stations::default_stations());
+        let (stations, stations_load_error) = match load_stations() {
+            Ok(s)  => (s, false),
+            Err(e) => {
+                log::warn!("stations.toml load/parse error, using bundled defaults: {e}");
+                (crate::stations::default_stations(), true)
+            }
+        };
         let themes    = all_themes();
         let theme     = find_theme(&config.theme);
         let player    = Player::new(config.volume);
@@ -111,6 +124,7 @@ impl App {
             meta_poll: None,
             last_notified_title: None,
             history: history::load(),
+            silent_ticks: 0,
         };
 
         if first_run {
@@ -118,6 +132,8 @@ impl App {
                 "Welcome! Config created at {}",
                 Config::config_dir().display()
             ));
+        } else if stations_load_error {
+            app.set_status("stations.toml invalid — loaded built-in defaults (see jarl.log)".to_string());
         }
         Ok(app)
     }
@@ -169,6 +185,7 @@ impl App {
                     self.ticker_offset = self.ticker_offset.wrapping_add(1);
                 }
                 self.maybe_notify_track_change();
+                self.check_dead_air();
             }
         }
     }
@@ -177,275 +194,12 @@ impl App {
 
     fn handle_key(&mut self, code: KeyCode, mods: KeyModifiers) -> Result<()> {
         match &self.mode {
-            AppMode::Normal              => self.handle_normal(code, mods),
-            AppMode::ThemePicker  { .. } => self.handle_theme_picker(code, mods),
-            AppMode::ConfirmDelete { .. } => self.handle_confirm_delete(code),
-            AppMode::Search              => self.handle_search(code, mods),
-            AppMode::History      { .. } => self.handle_history(code, mods),
+            AppMode::Normal               => crate::modes::normal::handle(self, code, mods),
+            AppMode::ThemePicker   { .. }  => crate::modes::theme_picker::handle(self, code, mods),
+            AppMode::ConfirmDelete { .. }  => crate::modes::confirm_delete::handle(self, code),
+            AppMode::Search                => crate::modes::search::handle(self, code),
+            AppMode::History       { .. }  => crate::modes::history::handle(self, code, mods),
         }
-    }
-
-    // ── Normal mode ───────────────────────────────────────────────────────────
-
-    fn handle_normal(&mut self, code: KeyCode, mods: KeyModifiers) -> Result<()> {
-        let kb = self.config.keybindings.clone();
-        let n  = self.visible_stations().len();
-
-        let m = |s: &str| Keybindings::matches(s, code, mods);
-
-        if m(&kb.quit) {
-            self.save_config()?;
-            self.should_quit = true;
-        }
-
-        if m(&kb.nav_down) || code == KeyCode::Down {
-            if n > 0 { self.sel = (self.sel + 1).min(n - 1); }
-        } else if m(&kb.nav_up) || code == KeyCode::Up {
-            self.sel = self.sel.saturating_sub(1);
-        } else if m(&kb.nav_top) || code == KeyCode::Home {
-            self.sel = 0;
-        } else if m(&kb.nav_bottom) || code == KeyCode::End {
-            if n > 0 { self.sel = n - 1; }
-        } else if code == KeyCode::PageDown
-                  || (code == KeyCode::Char('d') && mods == KeyModifiers::CONTROL) {
-            if n > 0 { self.sel = (self.sel + 10).min(n - 1); }
-        } else if code == KeyCode::PageUp
-                  || (code == KeyCode::Char('u') && mods == KeyModifiers::CONTROL) {
-            self.sel = self.sel.saturating_sub(10);
-
-        // Search  ('/') ── vim convention
-        } else if code == KeyCode::Char('/') {
-            self.search_query = String::new();
-            self.sel = 0;
-            self.mode = AppMode::Search;
-
-        // Playback
-        } else if m(&kb.play) {
-            self.play_selected();
-        } else if m(&kb.pause) {
-            if self.current.is_some() { self.player.send(PlayerCmd::TogglePause); }
-        } else if m(&kb.stop) {
-            self.player.send(PlayerCmd::Stop);
-            self.meta_poll = None;
-            self.last_notified_title = None;
-            self.current = None;
-
-        // Volume
-        } else if m(&kb.volume_up) {
-            self.adjust_volume(0.05);
-        } else if m(&kb.volume_down) {
-            self.adjust_volume(-0.05);
-
-        // Favourites
-        } else if m(&kb.favourite) {
-            if let Some(idx) = self.real_index(self.sel) {
-                let name = self.stations[idx].name.clone();
-                if self.favorites.contains(&name) {
-                    self.favorites.remove(&name);
-                    self.set_status(format!("Removed from favourites: {name}"));
-                } else {
-                    self.favorites.insert(name.clone());
-                    self.set_status(format!("Added to favourites: {name}"));
-                }
-                let _ = favorites::save(&self.favorites);
-            }
-        } else if m(&kb.fav_filter) {
-            self.fav_filter = !self.fav_filter;
-            self.sel = 0;
-            self.set_status(if self.fav_filter {
-                "Showing favourites only".into()
-            } else {
-                "Showing all stations".into()
-            });
-
-        // Station management
-        } else if m(&kb.delete) {
-            if let Some(idx) = self.real_index(self.sel) {
-                self.mode = AppMode::ConfirmDelete { index: idx };
-            }
-
-        } else if m(&kb.reload_themes) {
-            let new_themes = crate::theme::all_themes();
-            if new_themes.is_empty() {
-                self.set_status("No active themes in themes.toml — edit the file and set enabled = true".into());
-            } else {
-                let prev_name = self.theme.name.clone();
-                self.themes = new_themes;
-                if let Some(t) = self.themes.iter().find(|t| t.name == prev_name) {
-                    self.theme = t.clone();
-                } else {
-                    self.theme = self.themes[0].clone();
-                    self.config.theme = self.theme.name.clone();
-                    let _ = self.config.save();
-                    self.set_status(format!("Theme '{}' no longer active — switched to {}", prev_name, self.theme.name));
-                }
-                if self.theme.name == prev_name {
-                    self.set_status(format!("Themes reloaded: {} available", self.themes.len()));
-                }
-            }
-        } else if m(&kb.reload) {
-            match load_stations() {
-                Ok(stations) => {
-                    let prev = self.stations.len();
-                    self.stations = stations;
-                    self.sel = self.sel.min(self.stations.len().saturating_sub(1));
-                    if self.current.map(|i| i >= self.stations.len()).unwrap_or(false) {
-                        self.player.send(PlayerCmd::Stop);
-                        self.current = None;
-                    }
-                    let diff = self.stations.len() as isize - prev as isize;
-                    self.set_status(format!("Reloaded: {} stations ({:+})", self.stations.len(), diff));
-                }
-                Err(e) => self.set_status(format!("Reload failed: {e}")),
-            }
-        } else if m(&kb.transparent) {
-            self.transparent = !self.transparent;
-            self.set_status(if self.transparent { "Transparent mode on".into() } else { "Opaque mode on".into() });
-        } else if m(&kb.hide_help) {
-            self.hide_help = !self.hide_help;
-        } else if m(&kb.zen) {
-            self.zen_mode = !self.zen_mode;
-            self.set_status(if self.zen_mode { "Zen mode on".into() } else { "Zen mode off".into() });
-        } else if m(&kb.visualizer) {
-            self.show_vis = !self.show_vis;
-            if !self.show_vis { self.spectrum.iter_mut().for_each(|s| *s = 0.0); }
-            self.set_status(if self.show_vis { "Visualizer on".into() } else { "Visualizer off".into() });
-        } else if m(&kb.theme) {
-            let idx = self.themes.iter()
-                .position(|th| th.name == self.theme.name)
-                .unwrap_or(0);
-            self.mode = AppMode::ThemePicker { selected: idx };
-        } else if m(&kb.history) {
-            self.mode = AppMode::History { selected: 0 };
-        } else if m(&kb.toggle_notify) {
-            self.config.notify = !self.config.notify;
-            let _ = self.config.save();
-            self.set_status(if self.config.notify {
-                "Notifications on".into()
-            } else {
-                "Notifications off".into()
-            });
-        }
-
-        Ok(())
-    }
-
-    // ── Search mode ───────────────────────────────────────────────────────────
-
-    fn handle_search(&mut self, code: KeyCode, _mods: KeyModifiers) -> Result<()> {
-        match code {
-            KeyCode::Esc => {
-                // Exit search: clear query and go back to Normal.
-                self.mode = AppMode::Normal;
-                self.search_query = String::new();
-                self.sel = 0;
-            }
-            KeyCode::Enter => {
-                // Play the currently highlighted station and exit search.
-                self.mode = AppMode::Normal;
-                self.play_selected();
-            }
-            KeyCode::Backspace => {
-                self.search_query.pop();
-                let n = self.visible_stations().len();
-                if n > 0 { self.sel = self.sel.min(n - 1); } else { self.sel = 0; }
-            }
-            KeyCode::Down => {
-                let n = self.visible_stations().len();
-                if n > 0 { self.sel = (self.sel + 1).min(n - 1); }
-            }
-            KeyCode::Up => {
-                self.sel = self.sel.saturating_sub(1);
-            }
-            KeyCode::Char(c) => {
-                self.search_query.push(c);
-                // Reset selection when the result set changes.
-                self.sel = 0;
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    // ── History mode ──────────────────────────────────────────────────────────
-
-    fn handle_history(&mut self, code: KeyCode, mods: KeyModifiers) -> Result<()> {
-        let kb = self.config.keybindings.clone();
-        let n  = self.history.len();
-
-        if let AppMode::History { ref mut selected } = self.mode {
-            let m = |s: &str| Keybindings::matches(s, code, mods);
-
-            if code == KeyCode::Esc || m(&kb.quit) || m(&kb.history) {
-                self.mode = AppMode::Normal;
-            } else if m(&kb.nav_down) || code == KeyCode::Down {
-                if n > 0 { *selected = (*selected + 1).min(n - 1); }
-            } else if m(&kb.nav_up) || code == KeyCode::Up {
-                *selected = selected.saturating_sub(1);
-            } else if m(&kb.nav_top) || code == KeyCode::Home {
-                *selected = 0;
-            } else if m(&kb.nav_bottom) || code == KeyCode::End {
-                if n > 0 { *selected = n - 1; }
-            } else if m(&kb.play) {
-                let idx = *selected;
-                self.mode = AppMode::Normal;
-                if let Some(entry) = self.history.get(idx).cloned() {
-                    self.play_from_history(entry);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn handle_theme_picker(&mut self, code: KeyCode, mods: KeyModifiers) -> Result<()> {
-        let kb = self.config.keybindings.clone();
-        let n  = self.themes.len();
-
-        if let AppMode::ThemePicker { ref mut selected } = self.mode {
-            let m = |s: &str| Keybindings::matches(s, code, mods);
-
-            if m(&kb.nav_down) || code == KeyCode::Down {
-                if n > 0 { *selected = (*selected + 1).min(n - 1); }
-            } else if m(&kb.nav_up) || code == KeyCode::Up {
-                *selected = selected.saturating_sub(1);
-            } else if m(&kb.play) {
-                let idx = *selected;
-                self.theme = self.themes[idx].clone();
-                self.config.theme = self.theme.name.clone();
-                let _ = self.config.save();
-                self.set_status(format!("Theme: {}", self.theme.name));
-                self.mode = AppMode::Normal;
-            } else if code == KeyCode::Esc || m(&kb.theme) || m(&kb.quit) {
-                self.mode = AppMode::Normal;
-            }
-        }
-        Ok(())
-    }
-
-    // ── Confirm delete ────────────────────────────────────────────────────────
-
-    fn handle_confirm_delete(&mut self, code: KeyCode) -> Result<()> {
-        let idx = if let AppMode::ConfirmDelete { index } = self.mode { index }
-                  else { return Ok(()); };
-        if matches!(code, KeyCode::Char('y') | KeyCode::Char('Y')) {
-            let name = self.stations[idx].name.clone();
-            if self.current == Some(idx) {
-                self.player.send(PlayerCmd::Stop);
-                self.current = None;
-            } else if let Some(c) = self.current {
-                if c > idx { self.current = Some(c - 1); }
-            }
-            self.favorites.remove(&name);
-            let _ = favorites::save(&self.favorites);
-            self.stations.remove(idx);
-            self.sel = self.sel.min(self.stations.len().saturating_sub(1));
-            match save_stations(&self.stations) {
-                Ok(_)  => self.set_status(format!("Deleted: {name}")),
-                Err(e) => self.set_status(format!("Deleted from memory (save failed: {e})")),
-            }
-        }
-        self.mode = AppMode::Normal;
-        Ok(())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -464,12 +218,30 @@ impl App {
         result
     }
 
-    fn real_index(&self, vis_sel: usize) -> Option<usize> {
+    pub(crate) fn real_index(&self, vis_sel: usize) -> Option<usize> {
         self.visible_stations().get(vis_sel).map(|(i, _)| *i)
     }
 
+    /// Plays the next/previous station relative to the one currently playing,
+    /// within the visible (filtered/searched) list. `delta` is +1 or -1.
+    /// If nothing is playing, falls back to the current cursor position.
+    pub(crate) fn play_relative(&mut self, delta: isize) {
+        let visible = self.visible_stations();
+        if visible.is_empty() { return; }
+
+        let cur_vis_pos = self.current
+            .and_then(|real| visible.iter().position(|(i, _)| *i == real))
+            .unwrap_or(self.sel);
+
+        let len = visible.len() as isize;
+        let new_pos = ((cur_vis_pos as isize + delta).rem_euclid(len)) as usize;
+
+        self.sel = new_pos;
+        self.play_selected();
+    }
+
     /// Plays the currently selected station (shared by Normal and Search modes).
-    fn play_selected(&mut self) {
+    pub(crate) fn play_selected(&mut self) {
         if let Some(idx) = self.real_index(self.sel) {
             let station  = &self.stations[idx];
             let url      = station.url.clone();
@@ -483,6 +255,7 @@ impl App {
             self.current = Some(idx);
             self.ticker_offset = 0;
             self.last_notified_title = None;
+            self.silent_ticks = 0;
             history::push(entry, &mut self.history);
             let _ = history::save(&self.history);
             self.player.play(url);
@@ -490,7 +263,7 @@ impl App {
     }
 
     /// Play a station from the history list (URL may no longer be in stations list).
-    fn play_from_history(&mut self, entry: HistoryEntry) {
+    pub(crate) fn play_from_history(&mut self, entry: HistoryEntry) {
         // Try to find the station in the current list to get metadata_url.
         let station_idx = self.stations.iter().position(|s| s.url == entry.url);
         let murl = station_idx
@@ -501,18 +274,29 @@ impl App {
         self.current = station_idx;
         self.ticker_offset = 0;
         self.last_notified_title = None;
+        self.silent_ticks = 0;
         history::push(entry, &mut self.history);
         let _ = history::save(&self.history);
         self.player.play(url);
     }
 
-    fn adjust_volume(&mut self, delta: f32) {
+    /// Clears now-playing state (metadata poller, last-notified title,
+    /// current station index) without touching the player itself — used
+    /// when stopping playback explicitly. Pairs with `PlayerCmd::Stop`,
+    /// which the caller is expected to have already sent.
+    pub(crate) fn clear_now_playing(&mut self) {
+        self.meta_poll = None;
+        self.last_notified_title = None;
+        self.current = None;
+    }
+
+    pub(crate) fn adjust_volume(&mut self, delta: f32) {
         let v = (self.player.volume() + delta).clamp(0.0, 1.0);
         self.config.volume = v;
         self.player.send(PlayerCmd::Volume(v));
     }
 
-    fn save_config(&mut self) -> Result<()> {
+    pub(crate) fn save_config(&mut self) -> Result<()> {
         self.config.volume = self.player.volume();
         self.config.theme  = self.theme.name.clone();
         self.config.save()
@@ -520,6 +304,42 @@ impl App {
 
     pub fn set_status(&mut self, msg: String) {
         self.status_msg = Some((msg, self.tick));
+    }
+
+    /// Detects "dead air": the player reports `Playing` (stream still
+    /// connected, no I/O error) but the decoded audio has been silent for
+    /// several consecutive ticks. This happens with some stations whose
+    /// CDN edge keeps the TCP connection alive while serving flat silence
+    /// after a backend failure — something the normal reconnect logic in
+    /// `player.rs` can't catch, since from its point of view nothing failed.
+    ///
+    /// At the default 120ms tick rate, `DEAD_AIR_TICKS` ticks is roughly
+    /// the threshold below before triggering a forced reconnect. This is
+    /// deliberately generous to avoid false positives during quiet musical
+    /// passages or intentional dead-air idents.
+    fn check_dead_air(&mut self) {
+        const DEAD_AIR_TICKS: u32 = 100; // ~12s at 120ms/tick
+
+        let Some(idx) = self.current else { self.silent_ticks = 0; return; };
+        if self.player.status() != PlayerStatus::Playing {
+            self.silent_ticks = 0;
+            return;
+        }
+
+        if is_silent(&self.sample_buf) {
+            self.silent_ticks = self.silent_ticks.saturating_add(1);
+        } else {
+            self.silent_ticks = 0;
+            return;
+        }
+
+        if self.silent_ticks >= DEAD_AIR_TICKS {
+            self.silent_ticks = 0;
+            let url = self.stations[idx].url.clone();
+            log::warn!("dead air detected on '{}', forcing reconnect", self.stations[idx].name);
+            self.set_status(format!("No audio detected — reconnecting to {}…", self.stations[idx].name));
+            self.player.play(url);
+        }
     }
 
     /// Send a desktop notification via `notify-send` if the track title has

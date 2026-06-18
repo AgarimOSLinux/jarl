@@ -317,6 +317,7 @@ fn draw_help_bar(f: &mut Frame, app: &App, area: Rect) {
         (format!("↑↓/{}/{}", d(&kb.nav_up), d(&kb.nav_down)), "nav"),
         (d(&kb.play),        "play"),
         (d(&kb.pause),       "pause"),
+        (format!("{}/{}", d(&kb.prev_station), d(&kb.next_station)), "zap"),
         (format!("{}/{}", d(&kb.volume_up), d(&kb.volume_down)), "vol"),
         ("/".into(),         "search"),
         (d(&kb.favourite),   "fav"),
