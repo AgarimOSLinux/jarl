@@ -36,7 +36,6 @@ pub struct Keybindings {
     pub toggle_notify: String,
     pub next_station: String,
     pub prev_station: String,
-    pub chiquito: String,
 }
 
 impl Default for Keybindings {
@@ -66,7 +65,6 @@ impl Default for Keybindings {
             toggle_notify: "N".into(),
             next_station:  "]".into(),
             prev_station:  "[".into(),
-            chiquito:      "c".into(),
         }
     }
 }
@@ -338,7 +336,6 @@ visualizer  = "{visualizer}"     # toggle spectrum visualizer
 transparent = "{transparent}"    # toggle transparent / opaque background
 history     = "{history}"        # open playback history
 toggle_notify = "{toggle_notify}" # toggle desktop notifications
-chiquito      = "{chiquito}"      # toggle Chiquito de la Calzada quotes in the help bar
 quit        = "{quit}"           # quit jarl
 "#,
             themes_path   = Self::themes_path().display(),
@@ -368,7 +365,6 @@ quit        = "{quit}"           # quit jarl
             transparent   = kb.transparent,
             history       = kb.history,
             toggle_notify = kb.toggle_notify,
-            chiquito      = kb.chiquito,
             quit          = kb.quit,
         )
     }

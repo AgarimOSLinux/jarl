@@ -88,13 +88,11 @@ pub struct App {
     /// (stream connected but producing no real audio) and force a
     /// reconnect. Resets to 0 whenever sound resumes or playback stops.
     silent_ticks: u32,
-    /// When true, the help bar shows Chiquito de la Calzada quotes instead
-    /// of the keyboard shortcuts.
-    pub chiquito_mode: bool,
-    /// Index into `quotes::QUOTES` for the quote currently shown in the help bar.
-    pub chiquito_bar_idx: usize,
-    /// Tick at which the last Chiquito quote rotation happened.
-    chiquito_last_rotate: u64,
+    /// Current Chiquito de la Calzada quote shown in the header's
+    /// now-playing box (right side) as a tribute. Rotates every
+    /// `CHIQUITO_QUOTE_INTERVAL`.
+    pub chiquito_quote: &'static crate::quotes::Quote,
+    chiquito_quote_at: Instant,
 }
 
 impl App {
@@ -132,9 +130,8 @@ impl App {
             last_notified_title: None,
             history: history::load(),
             silent_ticks: 0,
-            chiquito_mode: false,
-            chiquito_bar_idx: 0,
-            chiquito_last_rotate: 0,
+            chiquito_quote: crate::quotes::random_quote(),
+            chiquito_quote_at: Instant::now(),
         };
 
         if first_run {
@@ -196,7 +193,7 @@ impl App {
                 }
                 self.maybe_notify_track_change();
                 self.check_dead_air();
-                self.maybe_rotate_chiquito();
+                self.maybe_rotate_quote();
             }
         }
     }
@@ -299,7 +296,6 @@ impl App {
         self.meta_poll = None;
         self.last_notified_title = None;
         self.current = None;
-        self.chiquito_last_rotate = self.tick;
     }
 
     pub(crate) fn adjust_volume(&mut self, delta: f32) {
@@ -316,6 +312,19 @@ impl App {
 
     pub fn set_status(&mut self, msg: String) {
         self.status_msg = Some((msg, self.tick));
+    }
+
+    /// Rotates the Chiquito de la Calzada quote shown in the header every
+    /// `CHIQUITO_QUOTE_INTERVAL`. Picking a new quote at random each time
+    /// (rather than cycling through the list) means it can occasionally
+    /// repeat the same one back-to-back — that's fine for a small tribute
+    /// easter egg and keeps the selection logic trivial.
+    fn maybe_rotate_quote(&mut self) {
+        const CHIQUITO_QUOTE_INTERVAL: Duration = Duration::from_secs(30);
+        if self.chiquito_quote_at.elapsed() >= CHIQUITO_QUOTE_INTERVAL {
+            self.chiquito_quote = crate::quotes::random_quote();
+            self.chiquito_quote_at = Instant::now();
+        }
     }
 
     /// Detects "dead air": the player reports `Playing` (stream still
@@ -352,44 +361,6 @@ impl App {
             self.set_status(format!("No audio detected — reconnecting to {}…", self.stations[idx].name));
             self.player.play(url);
         }
-    }
-
-    /// Toggle the Chiquito de la Calzada mode on the help bar.
-    /// Picks a random quote on activation and records the tick for rotation.
-    pub fn toggle_chiquito(&mut self) {
-        self.chiquito_mode = !self.chiquito_mode;
-        if self.chiquito_mode {
-            self.chiquito_bar_idx = self.random_quote_idx();
-            self.chiquito_last_rotate = self.tick;
-        }
-    }
-
-    /// Rotate to a new random quote every 30 seconds while chiquito_mode is on
-    /// and a station is playing.
-    fn maybe_rotate_chiquito(&mut self) {
-        if !self.chiquito_mode { return; }
-        if self.player.status() != PlayerStatus::Playing { return; }
-        // TICK_MS = 120ms → 250 ticks ≈ 30 seconds
-        const ROTATE_TICKS: u64 = 250;
-        if self.tick.wrapping_sub(self.chiquito_last_rotate) >= ROTATE_TICKS {
-            self.chiquito_bar_idx = self.random_quote_idx();
-            self.chiquito_last_rotate = self.tick;
-        }
-    }
-
-    /// Returns a pseudo-random index into QUOTES, avoiding repeating the
-    /// current one if there is more than one quote available.
-    fn random_quote_idx(&self) -> usize {
-        let len = crate::quotes::QUOTES.len();
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.subsec_nanos() as usize)
-            .unwrap_or(self.tick as usize);
-        let mut idx = nanos % len;
-        if len > 1 && idx == self.chiquito_bar_idx {
-            idx = (idx + 1) % len;
-        }
-        idx
     }
 
     /// Send a desktop notification via `notify-send` if the track title has

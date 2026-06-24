@@ -51,7 +51,7 @@ pub fn draw(f: &mut Frame, app: &App) {
     if has_error     { constraints.push(Constraint::Length(3)); }
     constraints.push(Constraint::Min(3));
     if app.status_msg.is_some() { constraints.push(Constraint::Length(1)); }
-    if !app.zen_mode && (!app.hide_help || app.chiquito_mode) { constraints.push(Constraint::Length(3)); }
+    if !app.zen_mode && !app.hide_help { constraints.push(Constraint::Length(3)); }
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -77,7 +77,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         draw_station_list(f, app, content_area);
     }
     if app.status_msg.is_some() { draw_status_line(f, app, chunks[ci]); ci += 1; }
-    if !app.zen_mode && (!app.hide_help || app.chiquito_mode) { draw_help_bar(f, app, chunks[ci]); }
+    if !app.zen_mode && !app.hide_help { draw_help_bar(f, app, chunks[ci]); }
     match &app.mode {
         AppMode::ThemePicker   { selected } => draw_theme_picker(f, app, *selected),
         AppMode::ConfirmDelete { index }    => draw_confirm_delete(f, app, *index),
@@ -150,8 +150,19 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
     // The right-hand side of this line and the wave/vol line below it are
     // reserved for a rotating Chiquito de la Calzada tribute quote (two
     // short lines), right-aligned, leaving the left content untouched.
-    let inner_w = area.width.saturating_sub(2) as usize;
-    let reserved_w: usize = 0;
+    let inner_w = area.width.saturating_sub(2) as usize; // minus the block's left/right border
+    let q = app.chiquito_quote;
+    let q_line1 = q.lines.first().copied().unwrap_or("");
+    let q_line2 = q.lines.get(1).copied().unwrap_or("");
+    // Reserve enough width for the longer of the two quote lines, plus a
+    // small gap so it never visually collides with the scrolling title.
+    let quote_w = q_line1.chars().count().max(q_line2.chars().count());
+    const QUOTE_GAP: usize = 3;
+    // Below this terminal width, drop the quote entirely rather than
+    // squeezing both it and the track/genre text into an unreadable sliver.
+    const MIN_WIDTH_FOR_QUOTE: usize = 40;
+    let reserved_w = if quote_w > 0 && inner_w >= MIN_WIDTH_FOR_QUOTE { quote_w + QUOTE_GAP } else { 0 };
+    let (q_line1, q_line2) = if reserved_w > 0 { (q_line1, q_line2) } else { ("", "") };
 
     let track_line = {
         let title_opt = app.track_title.lock().ok()
@@ -183,12 +194,36 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(t.muted)
         };
 
-        // Right-pad the left content to fill the available width.
-        let left_w = inner_w.saturating_sub(5);
+        // Right-pad the left content so the quote lands flush against the
+        // right border, then append line 1 of the quote. Guard against
+        // width 0 (very narrow terminal or oversized quote reservation):
+        // pad_display's truncation path underflows on a zero width.
+        let left_w = inner_w.saturating_sub(5).saturating_sub(reserved_w);
         let left_padded = if left_w == 0 { String::new() } else { pad_display(&left, left_w) };
+        // Quote vertical alignment:
+        //   - 1-line quote: show it on this middle row (true vertical centre)
+        //   - 2-line quote: show line 1 here, line 2 on the wave/vol row below
+        let is_two_line = !q_line2.is_empty();
+        let mid_quote = if is_two_line { q_line1 } else { q_line1 };
+        let gap = if reserved_w > 0 { " ".repeat(QUOTE_GAP.min(inner_w)) } else { String::new() };
+        let mid_quote_padded = if reserved_w > 0 {
+            let col_w = reserved_w.saturating_sub(QUOTE_GAP);
+            let text_w = mid_quote.chars().count();
+            // Centre single-line quotes; left-align first line of two-liners
+            let pad = if is_two_line {
+                col_w.saturating_sub(text_w)
+            } else {
+                col_w.saturating_sub(text_w) / 2
+            };
+            format!("{}{}", " ".repeat(pad), mid_quote)
+        } else {
+            String::new()
+        };
         Line::from(vec![
             Span::raw("     "),
             Span::styled(left_padded, left_styled),
+            Span::raw(gap),
+            Span::styled(mid_quote_padded, Style::default().fg(t.accent)),
         ])
     };
 
@@ -201,9 +236,22 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
             Span::styled("vol: ", Style::default().fg(t.muted)),
             Span::styled(vol_bar, Style::default().fg(t.accent)),
         ];
-        let pad_w = inner_w.saturating_sub(left_text_w);
+        let pad_w = inner_w.saturating_sub(left_text_w).saturating_sub(reserved_w);
         let mut spans = left;
         spans.push(Span::raw(" ".repeat(pad_w)));
+        if reserved_w > 0 {
+            // Bottom row: only show content for two-line quotes (line 2).
+            // Single-line quotes are already shown centred on the middle row.
+            let is_two_line = !q_line2.is_empty();
+            if is_two_line {
+                let col_w = reserved_w.saturating_sub(QUOTE_GAP);
+                let text_w = q_line2.chars().count();
+                let pad = col_w.saturating_sub(text_w);
+                spans.push(Span::raw(" ".repeat(QUOTE_GAP.min(inner_w))));
+                spans.push(Span::raw(" ".repeat(pad)));
+                spans.push(Span::styled(q_line2, Style::default().fg(t.accent)));
+            }
+        }
         Line::from(spans)
     };
 
@@ -332,76 +380,44 @@ fn draw_help_bar(f: &mut Frame, app: &App, area: Rect) {
     let t  = &app.theme;
     let bg = if app.transparent { ratatui::style::Color::Reset } else { t.bg };
     let kb = &app.config.keybindings;
+    let d  = |s: &str| Keybindings::display(s);
 
-    if app.chiquito_mode {
-        let trumpet = if app.tick % 8 < 4 { "🎺" } else { "🎷" };
-        let quote_text = crate::quotes::QUOTES[app.chiquito_bar_idx];
+    let pairs: Vec<(String, &str)> = vec![
+        (format!("↑↓/{}/{}", d(&kb.nav_up), d(&kb.nav_down)), "nav"),
+        (d(&kb.play),        "play"),
+        (d(&kb.pause),       "pause"),
+        (format!("{}/{}", d(&kb.prev_station), d(&kb.next_station)), "zap"),
+        (format!("{}/{}", d(&kb.volume_up), d(&kb.volume_down)), "vol"),
+        ("/".into(),         "search"),
+        (d(&kb.favourite),   "fav"),
+        (d(&kb.fav_filter),  "filter"),
+        (d(&kb.delete),      "del"),
+        (d(&kb.theme),       "theme"),
+        (d(&kb.history),       "history"),
+        (d(&kb.toggle_notify), "notify"),
+        (d(&kb.zen),         "zen"),
+        (d(&kb.hide_help),   "hide"),
+        (d(&kb.visualizer),  "vis"),
+        (d(&kb.transparent), "transp"),
+        (d(&kb.reload),      "reload"),
+        (d(&kb.reload_themes), "themes"),
+        (d(&kb.quit),        "quit"),
+    ];
 
-        let inner_w = area.width.saturating_sub(6) as usize;
-        let padded  = format!("{quote_text}     ");
-        let chars: Vec<char> = padded.chars().collect();
-        let len = chars.len();
-        let scrolled: String = if quote_text.chars().count() > inner_w {
-            let offset = app.ticker_offset % len;
-            chars[offset..].iter().chain(chars[..offset].iter()).take(inner_w).collect()
-        } else {
-            quote_text.to_string()
-        };
-
-        let label = format!(" {trumpet} Chiquito  ");
-        let spans = vec![
-            Span::styled(label, Style::default().fg(t.accent).add_modifier(Modifier::BOLD)),
-            Span::styled(scrolled, Style::default().fg(t.fg)),
-        ];
-        f.render_widget(
-            Paragraph::new(Line::from(spans)).block(
-                Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(t.accent))
-                    .style(Style::default().bg(bg)),
-            ),
-            area,
-        );
-    } else {
-        // ── Normal mode: keyboard shortcuts ───────────────────────────────────
-        let d = |s: &str| Keybindings::display(s);
-        let pairs: Vec<(String, &str)> = vec![
-            (format!("↑↓/{}/{}", d(&kb.nav_up), d(&kb.nav_down)), "nav"),
-            (d(&kb.play),        "play"),
-            (d(&kb.pause),       "pause"),
-            (format!("{}/{}", d(&kb.prev_station), d(&kb.next_station)), "zap"),
-            (format!("{}/{}", d(&kb.volume_up), d(&kb.volume_down)), "vol"),
-            ("/".into(),         "search"),
-            (d(&kb.favourite),   "fav"),
-            (d(&kb.fav_filter),  "filter"),
-            (d(&kb.delete),      "del"),
-            (d(&kb.theme),       "theme"),
-            (d(&kb.history),     "history"),
-            (d(&kb.toggle_notify), "notify"),
-            (d(&kb.zen),         "zen"),
-            (d(&kb.hide_help),   "hide"),
-            (d(&kb.visualizer),  "vis"),
-            (d(&kb.transparent), "transp"),
-            (d(&kb.reload),      "reload"),
-            (d(&kb.reload_themes), "themes"),
-            (d(&kb.chiquito),    "chiquito"),
-            (d(&kb.quit),        "quit"),
-        ];
-
-        let mut spans: Vec<Span> = vec![Span::raw(" ")];
-        for (i, (key, desc)) in pairs.iter().enumerate() {
-            if i > 0 { spans.push(Span::styled(" · ", Style::default().fg(t.border))); }
-            spans.push(Span::styled(key.clone(), Style::default().fg(t.accent).add_modifier(Modifier::BOLD)));
-            spans.push(Span::styled(format!(" {desc}"), Style::default().fg(t.muted)));
-        }
-        f.render_widget(
-            Paragraph::new(Line::from(spans)).block(
-                Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(t.border))
-                    .style(Style::default().bg(bg)),
-            ),
-            area,
-        );
+    let mut spans: Vec<Span> = vec![Span::raw(" ")];
+    for (i, (key, desc)) in pairs.iter().enumerate() {
+        if i > 0 { spans.push(Span::styled(" · ", Style::default().fg(t.border))); }
+        spans.push(Span::styled(key.clone(), Style::default().fg(t.accent).add_modifier(Modifier::BOLD)));
+        spans.push(Span::styled(format!(" {desc}"), Style::default().fg(t.muted)));
     }
+    f.render_widget(
+        Paragraph::new(Line::from(spans)).block(
+            Block::default().borders(Borders::ALL).border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(t.border))
+                .style(Style::default().bg(bg)),
+        ),
+        area,
+    );
 }
 
 // ── Theme picker modal ────────────────────────────────────────────────────────

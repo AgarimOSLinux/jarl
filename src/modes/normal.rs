@@ -148,8 +148,6 @@ pub fn handle(app: &mut App, code: KeyCode, mods: KeyModifiers) -> Result<()> {
         } else {
             "Notifications off".into()
         });
-    } else if m(&kb.chiquito) {
-        app.toggle_chiquito();
     }
 
     Ok(())

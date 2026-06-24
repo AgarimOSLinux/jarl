@@ -8,41 +8,43 @@
 //! cross-checked against multiple independent retrospectives published
 //! after his passing.
 //!
-//! Shown in the help bar when the user toggles Chiquito mode with `c`.
+//! Displayed in the header's now-playing box as a rotating tribute when no
+//! live track title is available. Each entry is pre-split into one or two
+//! short lines to fit the limited space there.
 
-pub const QUOTES: &[&str] = &[
-    "¡Fistro!",
-    "¡Pecador!",
-    "¡Cobarde!",
-    "¿Te da cuén?",
-    "Hasta luego, Lucas",
-    "Por la gloria de mi madre",
-    "¡Al ataquerl!",
-    "¡Jarl!",
-    "¡Quietoorl!",
-    "¡Torpedo!",
-    "La caidita de Roma",
-    "Diodenal",
-    "Gromenauer",
-     "¡A can demor e narrr!",
-    "¡Ese fistro danimarl!",
-    "Tienes más peligro que un barbero con hipo",
-    "Eres más feo que el Fari comiendo limones",
-    "Estás más perdido que Marco el día de la madre",
-    "Te mueves más que los precios",
-    "¿Cómor?",
-    "Sieteee caballo que vienennn de Bonanzaaarrlll",
-    "En vez del graduado escolar tenía una etiqueta de Anís del Mono",
-    "Trabaja menos que el sastre de Tarzán",
-    "Está la cosa muy malita",
-    "Te voy a meter una multa que no te la saca ni Perry Manso",
-    "¡Relájese usterl!",
-    "Lo maté en agosto, la calóh apretaba",
-    "Una mala tarde la tiene cualquiera",
-    "Físicamente, morálmente",
-    "¡Uno que nació después de los dolores!",
-    "¡No te digo trigor por no llamarte Rodrigo!",
-    "¡Ten cuidadínnn no te hagas pupita en el fistro duodenalll!",
-    "Meretérica",
-    "Grijandemore",
+/// A quote, pre-split into 1–2 short display lines.
+pub struct Quote {
+    pub lines: &'static [&'static str],
+}
+
+pub const QUOTES: &[Quote] = &[
+    Quote { lines: &["¡Fistro!"] },
+    Quote { lines: &["¡Pecador!"] },
+    Quote { lines: &["¡Cobarde!"] },
+    Quote { lines: &["¿Te da cuén?"] },
+    Quote { lines: &["Hasta luego, Lucas"] },
+    Quote { lines: &["Por la gloria de mi madre"] },
+    Quote { lines: &["¡Al ataquerl!"] },
+    Quote { lines: &["¡Jarl!"] },
+    Quote { lines: &["¡Quietoorl!"] },
+    Quote { lines: &["¡Torpedo!"] },
+    Quote { lines: &["La caidita de Roma"] },
+    Quote { lines: &["Diodenal"] },
+    Quote { lines: &["Gromenauer"] },
+    Quote { lines: &["A Candemor"] },
+    Quote { lines: &["¿Cómor?"] },
+    Quote { lines: &["Meretérica"] },
+    Quote { lines: &["Grijandemore"] },
 ];
+
+/// Picks a pseudo-random quote without pulling in a `rand` dependency,
+/// reusing the same low-stakes entropy source as the reconnect jitter in
+/// `player.rs` (sub-second clock component).
+pub fn random_quote() -> &'static Quote {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
+    let idx = (nanos as usize) % QUOTES.len();
+    &QUOTES[idx]
+}
