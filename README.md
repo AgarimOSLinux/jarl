@@ -4,9 +4,9 @@ Terminal radio player written in Rust. Focused on ambient, trip-hop, downtempo, 
 
 Supported formats: **MP3 · AAC · OGG/Vorbis · FLAC**
 
-jarl is named in tribute to Gregorio Sánchez, "Chiquito de la Calzada" — the
-now-playing box rotates one of his catchphrases every 5 minutes on its
-right-hand side.
+jarl is named in tribute to Gregorio Sánchez, "Chiquito de la Calzada" — press
+`c` to toggle his catchphrases in the help bar (rotates every 30 seconds while
+a station is playing).
 
 ---
 
@@ -97,6 +97,7 @@ On first launch jarl creates its config directory and all default files:
 | `v` | Toggle spectrum visualizer |
 | `p` | Toggle transparent background |
 | `N` | Toggle desktop notifications |
+| `c` | Toggle Chiquito de la Calzada quotes in the help bar |
 | `q` / `Ctrl-C` | Quit |
 
 All bindings can be remapped in `~/.config/jarl/config.toml`. Modifier prefixes
