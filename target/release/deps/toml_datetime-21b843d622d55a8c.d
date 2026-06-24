@@ -1,0 +1,10 @@
+/home/jose/jarl/target/release/deps/toml_datetime-21b843d622d55a8c.d: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/datetime.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/de.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/ser.rs
+
+/home/jose/jarl/target/release/deps/libtoml_datetime-21b843d622d55a8c.rlib: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/datetime.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/de.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/ser.rs
+
+/home/jose/jarl/target/release/deps/libtoml_datetime-21b843d622d55a8c.rmeta: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/datetime.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/de.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/ser.rs
+
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/lib.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/datetime.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/de.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/toml_datetime-1.1.1+spec-1.1.0/src/ser.rs:

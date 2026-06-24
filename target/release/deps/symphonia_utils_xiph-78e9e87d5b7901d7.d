@@ -1,0 +1,10 @@
+/home/jose/jarl/target/release/deps/symphonia_utils_xiph-78e9e87d5b7901d7.d: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/metadata.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/vorbis/mod.rs
+
+/home/jose/jarl/target/release/deps/libsymphonia_utils_xiph-78e9e87d5b7901d7.rlib: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/metadata.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/vorbis/mod.rs
+
+/home/jose/jarl/target/release/deps/libsymphonia_utils_xiph-78e9e87d5b7901d7.rmeta: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/metadata.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/vorbis/mod.rs
+
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/lib.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/mod.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/flac/metadata.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-utils-xiph-0.5.5/src/vorbis/mod.rs:

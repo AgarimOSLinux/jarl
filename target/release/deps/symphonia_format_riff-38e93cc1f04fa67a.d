@@ -1,0 +1,10 @@
+/home/jose/jarl/target/release/deps/symphonia_format_riff-38e93cc1f04fa67a.d: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/common.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/chunks.rs
+
+/home/jose/jarl/target/release/deps/libsymphonia_format_riff-38e93cc1f04fa67a.rlib: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/common.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/chunks.rs
+
+/home/jose/jarl/target/release/deps/libsymphonia_format_riff-38e93cc1f04fa67a.rmeta: /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/lib.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/common.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/mod.rs /home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/chunks.rs
+
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/lib.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/common.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/mod.rs:
+/home/jose/.local/share/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/symphonia-format-riff-0.6.0/src/wave/chunks.rs:
